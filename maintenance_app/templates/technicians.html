@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Technicians</title>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+        <h2>Technicians</h2>
+    </div>
+
+    <div class="navbar-right">
+        <div class="dropdown">
+            <div class="hamburger">&#9776;</div>
+            <div class="dropdown-content">
+                <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Technicians Container -->
+<div class="profile-container">
+    <h1>Technicians</h1>
+
+    <!-- Add Technician Button -->
+    <button class="primary-btn" onclick="openModal()">+ Add Technician</button>
+
+    <hr>
+
+    <!-- Technician List -->
+    <div class="technicians-list">
+        {% if technicians %}
+            <table class="technicians-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tech in technicians %}
+                    <tr>
+                        <td>{{ tech.name|title }}</td>
+                        <td>{{ tech.email }}</td>
+                        <td>
+                            <button
+                                class="danger-btn"
+                                data-id="{{ tech.id }}"
+                                data-name="{{ tech.name|title }}"
+                                onclick="openDeleteModalFromButton(this)">
+                                Remove
+                            </button>
+
+                            <script>
+                                // Function to open delete modal from button
+                                function openDeleteModalFromButton(btn) {
+                                    const techId = btn.dataset.id;
+                                    const techName = btn.dataset.name;
+
+                                    document.getElementById("deleteModal").style.display = "block";
+                                    document.getElementById("deleteText").innerText =
+                                        `Are you sure you want to remove ${techName}?`;
+                                    document.getElementById("deleteForm").action = `/delete-technician/${techId}`;
+                                }
+
+                            </script>
+
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No technicians added yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Technician Modal -->
+<div id="techModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+
+        <h2>Add Technician</h2>
+
+        <form method="POST" action="{{ url_for('add_technician') }}">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <button type="submit">Add Technician</button>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Technician Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDeleteModal()">&times;</span>
+
+        <h2>Remove Technician</h2>
+        <p id="deleteText"></p>
+
+        <form id="deleteForm" method="POST">
+            <button type="submit" class="danger-btn">Yes, Remove</button>
+            <button type="button" class="secondary-btn" onclick="closeDeleteModal()">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- JS for Modals -->
+<script>
+    // Add Technician Modal
+    function openModal() {
+        document.getElementById("techModal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("techModal").style.display = "none";
+    }
+
+    // Delete Technician Modal
+    function openDeleteModal(techId, techName) {
+        document.getElementById("deleteModal").style.display = "block";
+        document.getElementById("deleteText").innerText =
+            `Are you sure you want to remove ${techName}?`;
+
+        document.getElementById("deleteForm").action =
+            `/delete-technician/${techId}`;
+    }
+
+    function closeDeleteModal() {
+        document.getElementById("deleteModal").style.display = "none";
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const addModal = document.getElementById("techModal");
+        const deleteModal = document.getElementById("deleteModal");
+
+        if (event.target === addModal) addModal.style.display = "none";
+        if (event.target === deleteModal) deleteModal.style.display = "none";
+    }
+</script>
+
+</body>
+</html>

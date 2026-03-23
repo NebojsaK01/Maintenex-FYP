@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Profile</title>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+            <h2>Profile</h2>
+        </div>
+
+        <div class="navbar-right">
+            <div class="dropdown">
+                <div class="hamburger">&#9776;</div>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                    <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                    <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                    <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                    <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                    <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                    <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile container -->
+    <div class="profile-container">
+        <h1>Profile</h1>
+
+        <!-- User info -->
+        <div class="profile-info">
+            <p><strong>Full Name:</strong> {{ user.full_name|title }}</p>
+            <p><strong>Email:</strong> {{ user.user_email }}</p>
+        </div>
+
+        <hr>
+
+        <!-- Change Password Form -->
+        <h2>Change Password</h2>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        {% if message %}
+            <p class="success">{{ message }}</p>
+        {% endif %}
+
+        <form method="POST" class="change-password-form">
+            <input type="password" name="current_password" placeholder="Current Password" required>
+            <input type="password" name="new_password" placeholder="New Password" required>
+            <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
+            <button type="submit">Change Password</button>
+        </form>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Assets</title>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+        <h2>Assets</h2>
+    </div>
+
+    <div class="navbar-right">
+        <div class="dropdown">
+            <div class="hamburger">&#9776;</div>
+            <div class="dropdown-content">
+                <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="employees-container">
+    {% for role, users_list in segmented.items() %}
+        <div class="role-section">
+            <h3>{{ role }}s</h3>
+            {% if users_list %}
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users_list %}
+                        <tr>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.user_email }}</td>
+                            <td>{{ user.phone }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No {{ role.lower() }}s found.</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Dashboard</title>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <!-- Left side -->
+        <div class="navbar-left">
+            <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+            <h2>Dashboard</h2>
+        </div>
+
+        <!-- Right side -->
+        <div class="navbar-right">
+            <div class="dropdown">
+                <!-- Hamburger icon -->
+                <div class="hamburger">
+                    &#9776; <!-- Unicode for 3 lines -->
+                </div>
+                <!-- Dropdown menu -->
+                <div class="dropdown-content">
+                    <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+
+    <!-- Dashboard content -->
+    <div class="dashboard-container">
+        <h1>Welcome, {{ full_name }}</h1>
+
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Overdue Services</h3>
+                <p style="color:red; font-weight:bold;">{{ overdue_count }}</p>
+            </div>
+
+            <div class="card">
+                <h3>Upcoming Services (Next 7 Days)</h3>
+                <p style="color:orange; font-weight:bold;">{{ upcoming_count }}</p>
+            </div>
+        </div>
+
+        <a href="{{ url_for('assets') }}">Go to Assets</a>
+
+    </div>
+
+    
+</body>
+</html>

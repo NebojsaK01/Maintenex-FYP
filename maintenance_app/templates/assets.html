@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Assets</title>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+        <h2>Assets</h2>
+    </div>
+
+    <div class="navbar-right">
+        <div class="dropdown">
+            <div class="hamburger">&#9776;</div>
+            <div class="dropdown-content">
+                <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Assets Container -->
+<div class="assets-container">
+    <h1>Assets</h1>
+    
+    <!-- Search Assets -->
+    <div class="search-container">
+        <form method="GET" action="{{ url_for('assets') }}">
+            <input type="text" name="q" placeholder="Search assets..." value="{{ request.args.get('q', '') }}">
+            
+            <div class="button-row">
+                <button type="submit">Search</button>
+                <a href="{{ url_for('assets') }}"><button type="button">Reset</button></a>
+            </div>
+        </form>
+    </div>
+
+
+    {% if session['role'] in ['admin', 'supervisor'] %}
+        <!-- Add Asset Button only admin + supervisor allowed to add -->
+        <button class="primary-btn" onclick="openAddModal()">+ Add Asset</button>
+    {% endif %}
+    <hr>
+
+    <!-- Asset List -->
+    <div class="assets-list">
+        {% if assets %}
+            <table class="assets-table">
+                <thead>
+                    <tr>
+                        <!-- <th>ID</th> -->
+                        <th>Code</th>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Serial Number</th>
+                        <th>Identifier</th>
+                        <th>Location</th>
+                        <th>Manufacturer</th>
+                        <th>Model</th>
+                        <th>Purchase Date</th>
+                        <th>status</th>
+                        <th>Last Service</th>
+                        <th>Next Service</th>
+                        <!-- <th>Next Service</th> -->
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                   <tr 
+                        data-id="{{ asset.id }}" 
+                        data-code="{{ asset.asset_code }}"
+                        data-type="{{ asset.asset_type }}"
+                        data-name="{{ asset.name }}"
+                        data-serial="{{ asset.serial_number }}"
+                        data-identifier="{{ asset.identifier }}"
+                        data-location="{{ asset.location }}"
+                        data-manufacturer="{{ asset.manufacturer }}"
+                        data-model="{{ asset.model }}"
+                        data-purchase="{{ asset.purchase_date }}"
+                        data-status="{{ asset.status }}"
+                        data-last_service_date="{{ asset.last_service_date }}"
+                        data-next_service_date="{{ asset.next_service_date }}"
+                        style="cursor:pointer;"
+                        class="{% if asset.is_overdue %}overdue{% elif asset.is_due_soon %}due-soon{% endif %}"
+                        onclick="openViewModal(this)"
+                    >
+
+
+                        <!-- <td>{{ asset.id }}</td> -->
+                        <td>{{ asset.asset_code }}</td>
+                        <td>{{ asset.asset_type }}</td>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.serial_number }}</td>
+                        <td>{{ asset.identifier }}</td>
+                        <td>{{ asset.location }}</td>
+                        <td>{{ asset.manufacturer }}</td>
+                        <td>{{ asset.model }}</td>
+                        <td>{{ asset.purchase_date }}</td>
+                        <td>{{ asset.status }}</td>
+                        <td>{{ asset.last_service_date }}</td>
+                        <td>{{ asset.next_service_date }}</td>
+
+                        <td>
+                            {% if session['role'] in ['admin', 'supervisor'] %}
+                                <button 
+                                    class="secondary-btn"
+                                    onclick="event.stopPropagation(); openEditModal(this.closest('tr'))">
+                                    Edit
+                                </button>
+
+                                <button 
+                                    class="danger-btn"
+                                    data-id="{{ asset.id }}"
+                                    data-name="{{ asset.name|title }}"
+                                    onclick="event.stopPropagation(); openDeleteModalFromButton(this)">
+                                    Remove
+                                </button>
+                            {% endif %}
+
+                            
+
+                            <form method="POST" action="/service-asset/{{ asset.id }}" style="display:inline-block;">
+                                <input type="number" name="interval_days" placeholder="Days until next service" value="30" min="1" style="width:70px;">
+                                <button type="submit" class="secondary-btn">Service</button>
+                            </form>
+
+                        </td>
+                        
+                    </tr>
+                    
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No assets added yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Asset Modal -->
+<div id="addAssetModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddModal()">&times;</span>
+
+        <h2>Add Asset</h2>
+
+        <form method="POST" action="{{ url_for('add_asset') }}">
+            <div class="form-group">
+                <label for="asset_type">Asset Type</label>
+                <select name="asset_type" id="asset_type" required>
+                    <option value="">Select Type</option>
+                    <option value="Machine">Machine / Equipment</option>
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Tool">Tool / Handheld Equipment</option>
+                    <option value="Electrical">Electrical / Electronics</option>
+                    <option value="Fire Safety">Fire Safety Equipment</option>
+                    <option value="HVAC / Plumbing">HVAC / Plumbing / Building Systems</option>
+                    <option value="Furniture">Furniture / Fixtures</option>
+                    <option value="Other">Other / Miscellaneous</option>
+                </select>
+
+            </div>
+
+            <div class="form-group">
+                <label for="name">Asset Name</label>
+                <input type="text" name="name" id="name" placeholder="Enter Asset Name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="serial_number">Serial Number</label>
+                <input type="text" name="serial_number" id="serial_number" placeholder="Enter Serial Number">
+            </div>
+
+            <div class="form-group">
+                <label for="identifier">Identifier</label>
+                <input type="text" name="identifier" id="identifier" placeholder="Enter Identifier">
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" name="location" id="location" placeholder="Enter Location">
+            </div>
+
+            <div class="form-group">
+                <label for="manufacturer">Manufacturer</label>
+                <input type="text" name="manufacturer" id="manufacturer" placeholder="Enter Manufacturer">
+            </div>
+
+            <div class="form-group">
+                <label for="model">Model</label>
+                <input type="text" name="model" id="model" placeholder="Enter Model">
+            </div>
+
+            <div class="form-group">
+                <label for="purchase_date">Purchase Date</label>
+                <input type="date" name="purchase_date" id="purchase_date">
+            </div>
+
+            <!-- Status Dropdown -->
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select name="status" id="status">
+                    <option value="Active" selected>Active</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Retired">Retired</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="last_service_date">Last Service Date</label>
+                <input type="date" name="last_service_date" id="last_service_date">
+            </div>
+
+            <div class="form-group">
+                <label for="next_service_date">Next Service Date</label>
+                <input type="date" name="next_service_date" id="next_service_date">
+            </div>
+
+
+            <!-- <div class="form-group">
+                <label for="next_service_due">Next Service Due</label>
+                <input type="date" name="next_service_due" id="next_service_due">
+            </div> -->
+
+            <button type="submit">Add Asset</button>
+        </form>
+
+
+
+
+    </div>
+</div>
+
+<!-- Delete Asset Modal -->
+<div id="deleteAssetModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDeleteAssetModal()">&times;</span>
+
+        <h2>Remove Asset</h2>
+        <p id="deleteAssetText"></p>
+
+        <form id="deleteAssetForm" method="POST">
+            <button type="submit" class="danger-btn">Yes, Remove</button>
+            <button type="button" class="secondary-btn" onclick="closeDeleteAssetModal()">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<!-- View Asset Modal -->
+<div id="viewAssetModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeViewModal()">&times;</span>
+
+        <h2>Asset Details</h2>
+
+        <div class="view-grid">
+            <p><strong>Code:</strong> <span id="view-code"></span></p>
+            <p><strong>Type:</strong> <span id="view-type"></span></p>
+            <p><strong>Name:</strong> <span id="view-name"></span></p>
+            <p><strong>Serial Number:</strong> <span id="view-serial"></span></p>
+            <p><strong>Identifier:</strong> <span id="view-identifier"></span></p>
+            <p><strong>Location:</strong> <span id="view-location"></span></p>
+            <p><strong>Manufacturer:</strong> <span id="view-manufacturer"></span></p>
+            <p><strong>Model:</strong> <span id="view-model"></span></p>
+            <p><strong>Purchase Date:</strong> <span id="view-purchase"></span></p>
+            <p><strong>Status:</strong> <span id="view-status"></span></p>
+            <p><strong>Status:</strong> <span id="view-last_service_date"></span></p>
+            <p><strong>Status:</strong> <span id="view-next_service_date"></span></p>
+        </div>
+
+        <h3>Change History</h3>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Changed By</th>
+                    <th>Action</th>
+                    <th>Field</th>
+                    <th>Old Value</th>
+                    <th>New Value</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div>
+</div>
+
+<!-- Edit Asset Modal -->
+<div id="editAssetModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+
+        <h2>Edit Asset</h2>
+
+        <form id="editAssetForm" method="POST">
+            <input type="text" name="asset_id" id="edit-id">
+
+            <div class="form-group">
+                <label>Type</label>
+                <input type="text" name="asset_type" id="edit-type" required>
+            </div>
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" id="edit-name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Serial Number</label>
+                <input type="text" name="serial_number" id="edit-serial">
+            </div>
+
+            <div class="form-group">
+                <label>Identifier</label>
+                <input type="text" name="identifier" id="edit-identifier">
+            </div>
+
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" name="location" id="edit-location">
+            </div>
+
+            <div class="form-group">
+                <label>Manufacturer</label>
+                <input type="text" name="manufacturer" id="edit-manufacturer">
+            </div>
+
+            <div class="form-group">
+                <label>Model</label>
+                <input type="text" name="model" id="edit-model">
+            </div>
+
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="text" name="purchase_date" id="edit-purchase">
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" id="edit-status">
+                    <option value="Active">Active</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Retired">Retired</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="last_service_date">Last Service Date</label>
+                <input type="date" name="last_service_date" id="edit-last_service_date">
+            </div>
+
+            <div class="form-group">
+                <label for="next_service_date">Next Service Date</label>
+                <input type="date" name="next_service_date" id="edit-next_service_date">
+            </div>
+
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+
+
+<!-- Modal JS -->
+<script>
+    // Add Asset Modal
+    function openAddModal() {
+        document.getElementById("addAssetModal").style.display = "block";
+    }
+
+    function closeAddModal() {
+        document.getElementById("addAssetModal").style.display = "none";
+    }
+
+
+
+
+    // Delete Asset Modal
+    function openDeleteModalFromButton(btn) {
+        const assetId = btn.dataset.id;
+        const assetName = btn.dataset.name;
+
+        document.getElementById("deleteAssetModal").style.display = "block";
+        document.getElementById("deleteAssetText").innerText =
+            `Are you sure you want to remove ${assetName}?`;
+
+        document.getElementById("deleteAssetForm").action =
+            `/delete-asset/${assetId}`;
+    }
+
+    function closeDeleteAssetModal() {
+        document.getElementById("deleteAssetModal").style.display = "none";
+    }
+
+
+
+
+
+    // View Asset Modal
+    function openViewModal(row) {
+        document.getElementById("viewAssetModal").style.display = "block";
+
+        const assetId = row.dataset.id;  // ⚡ Important: get asset ID
+
+        document.getElementById("view-code").innerText = row.dataset.code || "-";
+        document.getElementById("view-type").innerText = row.dataset.type || "-";
+        document.getElementById("view-name").innerText = row.dataset.name || "-";
+        document.getElementById("view-serial").innerText = row.dataset.serial || "-";
+        document.getElementById("view-identifier").innerText = row.dataset.identifier || "-";
+        document.getElementById("view-location").innerText = row.dataset.location || "-";
+        document.getElementById("view-manufacturer").innerText = row.dataset.manufacturer || "-";
+        document.getElementById("view-model").innerText = row.dataset.model || "-";
+        document.getElementById("view-purchase").innerText = row.dataset.purchase || "-";
+        document.getElementById("view-status").innerText = row.dataset.status || "-";
+        document.getElementById("view-last_service_date").innerText = row.dataset.last_service_date || "-";
+        document.getElementById("view-next_service_date").innerText = row.dataset.next_service_date || "-";
+        
+
+        // Clear previous history
+        const tbody = document.querySelector("#historyTable tbody");
+        tbody.innerHTML = "";
+
+        // Fetch history
+        fetch(`/asset-history/${assetId}`)
+            .then(res => res.json())
+            .then(data => {
+                data.history.forEach(entry => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${entry.change_date}</td>
+                        <td>${entry.changed_by}</td>
+                        <td>${entry.action}</td>
+                        <td>${entry.field_changed || "-"}</td>
+                        <td>${entry.old_value || "-"}</td>
+                        <td>${entry.new_value || "-"}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+    }
+
+
+
+
+    function closeViewModal() {
+        document.getElementById("viewAssetModal").style.display = "none";
+    }
+
+
+
+
+    function openEditModal(row) {
+    document.getElementById("editAssetModal").style.display = "block";
+
+    const assetId = row.querySelector(".danger-btn").dataset.id;
+
+    document.getElementById("edit-id").value = assetId;
+    document.getElementById("edit-type").value = row.dataset.type || "";
+    document.getElementById("edit-name").value = row.dataset.name || "";
+    document.getElementById("edit-serial").value = row.dataset.serial || "";
+    document.getElementById("edit-identifier").value = row.dataset.identifier || "";
+    document.getElementById("edit-location").value = row.dataset.location || "";
+    document.getElementById("edit-manufacturer").value = row.dataset.manufacturer || "";
+    document.getElementById("edit-model").value = row.dataset.model || "";
+    document.getElementById("edit-purchase").value = row.dataset.purchase || "";
+    document.getElementById("edit-status").value = row.dataset.status || "Active";
+    document.getElementById("edit-last_service_date").value = row.dataset.last_service_date || "";
+    document.getElementById("edit-next_service_date").value = row.dataset.next_service_date || "";
+
+    document.getElementById("editAssetForm").action = `/edit-asset/${assetId}`;
+    }
+
+    function closeEditModal() {
+        document.getElementById("editAssetModal").style.display = "none";
+    }
+
+
+
+
+
+    window.onclick = function(event) {
+        const addModal = document.getElementById("addAssetModal");
+        const deleteModal = document.getElementById("deleteAssetModal");
+        const viewModal = document.getElementById("viewAssetModal");
+        const editModal = document.getElementById("editAssetModal");
+        
+        if (event.target === addModal) addModal.style.display = "none";
+        if (event.target === deleteModal) closeDeleteAssetModal();
+        if (event.target === viewModal) closeViewModal();
+        if (event.target === editModal) closeEditModal();
+    }
+
+
+
+    
+</script>
+
+</body>
+</html>
