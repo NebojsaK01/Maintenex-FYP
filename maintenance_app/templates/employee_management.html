@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Employee Management</title>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+        <h2>Employee Management</h2>
+    </div>
+
+    <div class="navbar-right">
+        <div class="dropdown">
+            <div class="hamburger">&#9776;</div>
+            <div class="dropdown-content">
+                <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('employee_management') }}">
+                    <button class="dropdown-btn">Employee Management</button>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('synthetic_machine') }}"><button class="dropdown-btn">Synthetic Machine</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="assets-page-container">
+    <div class="assets-page-hero">
+        <div>
+            <p class="assets-kicker">Admin only</p>
+            <h1>Employee Management</h1>
+            <p class="assets-subtext">
+                Create, update, remove, and manage employee accounts and roles.
+            </p>
+        </div>
+
+        <button class="assets-add-btn" onclick="openAddEmployeeModal()">+ Add Employee</button>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="assets-toolbar-card" style="margin-bottom: 18px;">
+                {% for message in messages %}
+                    <p style="margin: 0; color: #111827; font-weight: 600;">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="assets-table-card">
+        <div class="assets-table-header">
+            <div>
+                <h3>User Accounts</h3>
+                <p>Admin-only page for managing employee accounts.</p>
+            </div>
+        </div>
+
+        <div class="assets-table-wrapper">
+            {% if users %}
+                <table class="assets-table improved-assets-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr
+                            data-id="{{ user.id }}"
+                            data-full_name="{{ user.full_name }}"
+                            data-user_email="{{ user.user_email }}"
+                            data-phone="{{ user.phone }}"
+                            data-role="{{ user.role }}"
+                        >
+                            <td class="asset-name-cell">{{ user.full_name }}</td>
+                            <td>{{ user.user_email }}</td>
+                            <td>{{ user.phone or "-" }}</td>
+                            <td>
+                                <span class="status-badge
+                                    {% if user.role == 'admin' %}status-admin
+                                    {% elif user.role == 'supervisor' %}status-supervisor
+                                    {% elif user.role == 'technician' %}status-technician
+                                    {% else %}status-active
+                                    {% endif %}
+                                ">
+                                    {{ user.role|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="asset-actions-group">
+                                    <button
+                                        class="secondary-btn"
+                                        onclick="openEditEmployeeModal(this.closest('tr'))">
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        class="danger-btn"
+                                        data-id="{{ user.id }}"
+                                        data-name="{{ user.full_name }}"
+                                        onclick="openDeleteEmployeeModal(this)">
+                                        Remove
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="assets-empty-state">
+                    <h3>No users found</h3>
+                    <p>No employee accounts are currently stored in the system.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Employee Modal -->
+<div id="addEmployeeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddEmployeeModal()">&times;</span>
+        <h2>Add Employee</h2>
+
+        <form method="POST" action="{{ url_for('add_employee') }}">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="user_email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone">
+            </div>
+
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role" required>
+                    <option value="">Select role</option>
+                    <option value="admin">Admin</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="technician">Technician</option>
+
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Temporary Password</label>
+                <input type="text" name="password" required>
+            </div>
+
+            <button type="submit">Create Employee</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Employee Modal -->
+<div id="editEmployeeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditEmployeeModal()">&times;</span>
+        <h2>Edit Employee</h2>
+
+        <form id="editEmployeeForm" method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" id="edit-full_name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="user_email" id="edit-user_email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" id="edit-phone">
+            </div>
+
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role" id="edit-role" required>
+                    <option value="admin">Admin</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="technician">Technician</option>
+
+                </select>
+            </div>
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Employee Modal -->
+<div id="deleteEmployeeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDeleteEmployeeModal()">&times;</span>
+        <h2>Remove Employee</h2>
+        <p id="deleteEmployeeText"></p>
+
+        <form id="deleteEmployeeForm" method="POST">
+            <button type="submit" class="danger-btn">Yes, Remove</button>
+            <button type="button" class="secondary-btn" onclick="closeDeleteEmployeeModal()">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddEmployeeModal() {
+        document.getElementById("addEmployeeModal").style.display = "block";
+    }
+
+    function closeAddEmployeeModal() {
+        document.getElementById("addEmployeeModal").style.display = "none";
+    }
+
+    function openEditEmployeeModal(row) {
+        const userId = row.dataset.id;
+
+        document.getElementById("edit-full_name").value = row.dataset.full_name || "";
+        document.getElementById("edit-user_email").value = row.dataset.user_email || "";
+        document.getElementById("edit-phone").value = row.dataset.phone || "";
+        document.getElementById("edit-role").value = row.dataset.role || "employee";
+
+        document.getElementById("editEmployeeForm").action = `/edit-employee/${userId}`;
+        document.getElementById("editEmployeeModal").style.display = "block";
+    }
+
+    function closeEditEmployeeModal() {
+        document.getElementById("editEmployeeModal").style.display = "none";
+    }
+
+    function openDeleteEmployeeModal(btn) {
+        const userId = btn.dataset.id;
+        const userName = btn.dataset.name;
+
+        document.getElementById("deleteEmployeeText").innerText =
+            `Are you sure you want to remove ${userName}?`;
+
+        document.getElementById("deleteEmployeeForm").action = `/delete-employee/${userId}`;
+        document.getElementById("deleteEmployeeModal").style.display = "block";
+    }
+
+    function closeDeleteEmployeeModal() {
+        document.getElementById("deleteEmployeeModal").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        const addModal = document.getElementById("addEmployeeModal");
+        const editModal = document.getElementById("editEmployeeModal");
+        const deleteModal = document.getElementById("deleteEmployeeModal");
+
+        if (event.target === addModal) addModal.style.display = "none";
+        if (event.target === editModal) editModal.style.display = "none";
+        if (event.target === deleteModal) deleteModal.style.display = "none";
+    }
+</script>
+
+</body>
+</html>

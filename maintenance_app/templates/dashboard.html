@@ -6,57 +6,226 @@
 </head>
 <body>
 
-    <!-- Navbar -->
     <nav class="navbar">
-        <!-- Left side -->
         <div class="navbar-left">
             <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
             <h2>Dashboard</h2>
         </div>
 
-        <!-- Right side -->
         <div class="navbar-right">
             <div class="dropdown">
-                <!-- Hamburger icon -->
-                <div class="hamburger">
-                    &#9776; <!-- Unicode for 3 lines -->
-                </div>
-                <!-- Dropdown menu -->
+                <div class="hamburger">&#9776;</div>
                 <div class="dropdown-content">
                     <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
-                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
-                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
-                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
-                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
-                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
-                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+                    <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                    <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                    <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                    {% if session.get('role') == 'admin' %}
+                    <a href="{{ url_for('employee_management') }}">
+                        <button class="dropdown-btn">Employee Management</button>
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                    <a href="{{ url_for('synthetic_machine') }}"><button class="dropdown-btn">Synthetic Machine</button></a>
+                    <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                    <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
                 </div>
             </div>
         </div>
     </nav>
 
+    <div class="ops-dashboard-container">
+        <div class="ops-hero">
+            <div>
+                <p class="ops-kicker">Operations Dashboard</p>
+                <h1>Welcome, {{ full_name }}</h1>
+                <p class="ops-subtext">
+                    A clean summary view showing asset health, service urgency, and key operational counts.
+                </p>
+            </div>
+            <a href="{{ url_for('assets') }}" class="ops-assets-btn">Go to Assets</a>
+        </div>
 
-
-    <!-- Dashboard content -->
-    <div class="dashboard-container">
-        <h1>Welcome, {{ full_name }}</h1>
-
-        <div class="dashboard-cards">
-            <div class="card">
-                <h3>Overdue Services</h3>
-                <p style="color:red; font-weight:bold;">{{ overdue_count }}</p>
+        <div class="ops-summary-grid">
+            <div class="ops-summary-card">
+                <p class="ops-card-label">Overdue Services</p>
+                <h2 class="ops-card-number danger-text">{{ overdue_count }}</h2>
+                <p class="ops-card-note">Assets already past their next service date.</p>
             </div>
 
-            <div class="card">
-                <h3>Upcoming Services (Next 7 Days)</h3>
-                <p style="color:orange; font-weight:bold;">{{ upcoming_count }}</p>
+            <div class="ops-summary-card">
+                <p class="ops-card-label">Upcoming Services</p>
+                <h2 class="ops-card-number warning-text">{{ upcoming_count }}</h2>
+                <p class="ops-card-note">Assets due for service within the next 7 days.</p>
+            </div>
+
+            <div class="ops-summary-card">
+                <p class="ops-card-label">Total Assets</p>
+                <h2 class="ops-card-number">{{ total_assets }}</h2>
+                <p class="ops-card-note">Total tracked assets currently in the system.</p>
+            </div>
+
+            <div class="ops-summary-card">
+                <p class="ops-card-label">Active Assets</p>
+                <h2 class="ops-card-number good-text">{{ active_assets }}</h2>
+                <p class="ops-card-note">Assets currently marked as active.</p>
             </div>
         </div>
 
-        <a href="{{ url_for('assets') }}">Go to Assets</a>
+        <div class="ops-main-grid">
+            <div class="ops-panel">
+                <div class="ops-panel-header">
+                    <div>
+                        <h3>Service Urgency Overview</h3>
+                        <p>Real-time maintenance urgency based on service dates.</p>
+                    </div>
+                </div>
 
+                {% set total_service_items = overdue_count + upcoming_count %}
+                {% if total_service_items == 0 %}
+                    {% set total_service_items = 1 %}
+                {% endif %}
+
+                <div class="ops-chart-block">
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Overdue</span>
+                            <span>{{ overdue_count }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-danger" style="width: {{ (overdue_count / total_service_items * 100) }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Upcoming (7 Days)</span>
+                            <span>{{ upcoming_count }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-warning" style="width: {{ (upcoming_count / total_service_items * 100) }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ops-panel">
+                <div class="ops-panel-header">
+                    <div>
+                        <h3>Asset Status Breakdown</h3>
+                        <p>Distribution of assets across real operational statuses.</p>
+                    </div>
+                </div>
+
+                {% set total_status_assets = active_assets + maintenance_assets + inactive_assets + retired_assets + pending_assets %}
+                {% if total_status_assets == 0 %}
+                    {% set total_status_assets = 1 %}
+                {% endif %}
+
+                <div class="ops-chart-block">
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Active</span>
+                            <span>{{ active_assets }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-good" style="width: {{ (active_assets / total_status_assets * 100) }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Maintenance</span>
+                            <span>{{ maintenance_assets }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-warning" style="width: {{ (maintenance_assets / total_status_assets * 100) }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Inactive</span>
+                            <span>{{ inactive_assets }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill" style="width: {{ (inactive_assets / total_status_assets * 100) }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Retired</span>
+                            <span>{{ retired_assets }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-danger" style="width: {{ (retired_assets / total_status_assets * 100) }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-row">
+                        <div class="ops-chart-meta">
+                            <span>Pending</span>
+                            <span>{{ pending_assets }}</span>
+                        </div>
+                        <div class="ops-track">
+                            <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                            <div class="ops-fill ops-fill-warning" style="width: {{ (pending_assets / total_status_assets * 100) }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+
+        <div class="ops-panel" style="margin-bottom: 22px;">
+            <div class="ops-panel-header">
+                <div>
+                    <h3>Asset Type Distribution</h3>
+                    <p>Breakdown of the real asset categories currently stored in the system.</p>
+                </div>
+            </div>
+
+            <!--Logic for handling the bar proportionate to themselves -->
+            {% set ns = namespace(max_type_count=1) %}
+            {% for item in asset_type_counts %}
+                {% if item.count > ns.max_type_count %}
+                    {% set ns.max_type_count = item.count %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="ops-chart-block">
+                {% for item in asset_type_counts %}
+                <div class="ops-chart-row">
+                    <div class="ops-chart-meta">
+                        <span>{{ item.asset_type }}</span>
+                        <span>{{ item.count }}</span>
+                    </div>
+                    <div class="ops-track">
+                        <!-- A few of these warning because of Jinja but it works instead of using css then it breaks :(-->
+                        <div class="ops-fill" style="width: {{ ((item.count / ns.max_type_count) * 100)|round(1) }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="ops-focus-panel">
+            <p class="ops-kicker">Maintenance Focus</p>
+            <h3>
+                Prioritize overdue assets first, then review upcoming service items to reduce avoidable downtime and improve planning.
+            </h3>
+            <p>
+                Use the Assets and Alerts pages to drill into service dates, status changes, and maintenance history for each asset.
+            </p>
+        </div>
     </div>
 
-    
 </body>
 </html>

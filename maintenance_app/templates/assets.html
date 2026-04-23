@@ -6,7 +6,6 @@
 </head>
 <body>
 
-<!-- Navbar -->
 <nav class="navbar">
     <div class="navbar-left">
         <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
@@ -19,9 +18,12 @@
             <div class="dropdown-content">
                 <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
                 <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
-                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
                 <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('employee_management') }}"><button class="dropdown-btn">Employee Management</button></a>
+                {% endif %}
                 <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('synthetic_machine') }}"><button class="dropdown-btn">Synthetic Machine</button></a>
                 <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
                 <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
             </div>
@@ -29,122 +31,151 @@
     </div>
 </nav>
 
-<!-- Assets Container -->
-<div class="assets-container">
-    <h1>Assets</h1>
-    
-    <!-- Search Assets -->
-    <div class="search-container">
-        <form method="GET" action="{{ url_for('assets') }}">
-            <input type="text" name="q" placeholder="Search assets..." value="{{ request.args.get('q', '') }}">
-            
-            <div class="button-row">
-                <button type="submit">Search</button>
-                <a href="{{ url_for('assets') }}"><button type="button">Reset</button></a>
-            </div>
-        </form>
+<div class="assets-page-container">
+
+    <div class="assets-page-hero">
+        <div>
+            <p class="assets-kicker">Asset management</p>
+            <h1>Assets</h1>
+            <p class="assets-subtext">
+                Manage equipment, service dates, locations, and asset details in one place.
+            </p>
+        </div>
+
+        {% if session['role'] in ['admin', 'supervisor'] %}
+            <button class="assets-add-btn" type="button" onclick="openAddModal()">+ Add Asset</button>
+        {% endif %}
     </div>
 
-
-    {% if session['role'] in ['admin', 'supervisor'] %}
-        <!-- Add Asset Button only admin + supervisor allowed to add -->
-        <button class="primary-btn" onclick="openAddModal()">+ Add Asset</button>
-    {% endif %}
-    <hr>
-
-    <!-- Asset List -->
-    <div class="assets-list">
-        {% if assets %}
-            <table class="assets-table">
-                <thead>
-                    <tr>
-                        <!-- <th>ID</th> -->
-                        <th>Code</th>
-                        <th>Type</th>
-                        <th>Name</th>
-                        <th>Serial Number</th>
-                        <th>Identifier</th>
-                        <th>Location</th>
-                        <th>Manufacturer</th>
-                        <th>Model</th>
-                        <th>Purchase Date</th>
-                        <th>status</th>
-                        <th>Last Service</th>
-                        <th>Next Service</th>
-                        <!-- <th>Next Service</th> -->
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asset in assets %}
-                   <tr 
-                        data-id="{{ asset.id }}" 
-                        data-code="{{ asset.asset_code }}"
-                        data-type="{{ asset.asset_type }}"
-                        data-name="{{ asset.name }}"
-                        data-serial="{{ asset.serial_number }}"
-                        data-identifier="{{ asset.identifier }}"
-                        data-location="{{ asset.location }}"
-                        data-manufacturer="{{ asset.manufacturer }}"
-                        data-model="{{ asset.model }}"
-                        data-purchase="{{ asset.purchase_date }}"
-                        data-status="{{ asset.status }}"
-                        data-last_service_date="{{ asset.last_service_date }}"
-                        data-next_service_date="{{ asset.next_service_date }}"
-                        style="cursor:pointer;"
-                        class="{% if asset.is_overdue %}overdue{% elif asset.is_due_soon %}due-soon{% endif %}"
-                        onclick="openViewModal(this)"
+    <!-- Sticky toolbar -->
+    <div class="assets-toolbar-sticky">
+        <div class="assets-toolbar-card">
+            <form method="GET" action="{{ url_for('assets') }}" class="assets-search-form">
+                <div class="assets-search-input-wrap">
+                    <input
+                        type="text"
+                        name="q"
+                        placeholder="Search by code, type, name, serial, identifier, location..."
+                        value="{{ request.args.get('q', '') }}"
                     >
+                </div>
 
+                <div class="assets-toolbar-actions">
+                    <button type="submit" class="primary-btn">Search</button>
+                    <a href="{{ url_for('assets') }}" class="reset-link-btn">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                        <!-- <td>{{ asset.id }}</td> -->
-                        <td>{{ asset.asset_code }}</td>
-                        <td>{{ asset.asset_type }}</td>
-                        <td>{{ asset.name }}</td>
-                        <td>{{ asset.serial_number }}</td>
-                        <td>{{ asset.identifier }}</td>
-                        <td>{{ asset.location }}</td>
-                        <td>{{ asset.manufacturer }}</td>
-                        <td>{{ asset.model }}</td>
-                        <td>{{ asset.purchase_date }}</td>
-                        <td>{{ asset.status }}</td>
-                        <td>{{ asset.last_service_date }}</td>
-                        <td>{{ asset.next_service_date }}</td>
+    <div class="assets-table-card">
+        <div class="assets-table-header">
+            <div>
+                <h3>Asset Register</h3>
+                <p>Click an asset row to view full details and change history.</p>
+            </div>
+        </div>
 
-                        <td>
-                            {% if session['role'] in ['admin', 'supervisor'] %}
-                                <button 
-                                    class="secondary-btn"
-                                    onclick="event.stopPropagation(); openEditModal(this.closest('tr'))">
-                                    Edit
-                                </button>
+        <div class="assets-table-wrapper">
+            {% if assets %}
+                <table class="assets-table improved-assets-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Serial Number</th>
+                            <th>Identifier</th>
+                            <th>Location</th>
+                            <th>Manufacturer</th>
+                            <th>Model</th>
+                            <th>Purchase Date</th>
+                            <th>Status</th>
+                            <th>Last Service</th>
+                            <th>Next Service</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                        <tr
+                            data-id="{{ asset.id }}"
+                            data-code="{{ asset.asset_code or '' }}"
+                            data-type="{{ asset.asset_type or '' }}"
+                            data-name="{{ asset.name or '' }}"
+                            data-serial="{{ asset.serial_number or '' }}"
+                            data-identifier="{{ asset.identifier or '' }}"
+                            data-location="{{ asset.location or '' }}"
+                            data-manufacturer="{{ asset.manufacturer or '' }}"
+                            data-model="{{ asset.model or '' }}"
+                            data-purchase="{{ asset.purchase_date or '' }}"
+                            data-status="{{ asset.status or '' }}"
+                            data-last_service_date="{{ asset.last_service_date or '' }}"
+                            data-next_service_date="{{ asset.next_service_date or '' }}"
+                            class="{% if asset.is_overdue %}overdue{% elif asset.is_due_soon %}due-soon{% endif %}"
+                            onclick="openViewModal(this)"
+                        >
+                            <td><span class="asset-code-pill">{{ asset.asset_code }}</span></td>
+                            <td>{{ asset.asset_type or '-' }}</td>
+                            <td class="asset-name-cell">{{ asset.name or '-' }}</td>
+                            <td>{{ asset.serial_number or '-' }}</td>
+                            <td>{{ asset.identifier or '-' }}</td>
+                            <td>{{ asset.location or '-' }}</td>
+                            <td>{{ asset.manufacturer or '-' }}</td>
+                            <td>{{ asset.model or '-' }}</td>
+                            <td>{{ asset.purchase_date or '-' }}</td>
+                            <td>
+                                <span class="status-badge
+                                    {% if asset.status == 'Active' %}status-active
+                                    {% elif asset.status == 'Maintenance' %}status-maintenance
+                                    {% elif asset.status == 'Inactive' %}status-inactive
+                                    {% elif asset.status == 'Retired' %}status-retired
+                                    {% elif asset.status == 'Pending' %}status-pending
+                                    {% endif %}
+                                ">
+                                    {{ asset.status or '-' }}
+                                </span>
+                            </td>
+                            <td>{{ asset.last_service_date or '-' }}</td>
+                            <td>{{ asset.next_service_date or '-' }}</td>
 
-                                <button 
-                                    class="danger-btn"
-                                    data-id="{{ asset.id }}"
-                                    data-name="{{ asset.name|title }}"
-                                    onclick="event.stopPropagation(); openDeleteModalFromButton(this)">
-                                    Remove
-                                </button>
-                            {% endif %}
+                            <td onclick="event.stopPropagation();">
+                                <div class="asset-actions-group">
+                                    {% if session['role'] in ['admin', 'supervisor'] %}
+                                        <button
+                                            type="button"
+                                            class="secondary-btn"
+                                            onclick="openEditModal(this.closest('tr'))">
+                                            Edit
+                                        </button>
 
-                            
+                                        <button
+                                            type="button"
+                                            class="danger-btn"
+                                            data-id="{{ asset.id }}"
+                                            data-name="{{ asset.name|title }}"
+                                            onclick="openDeleteModalFromButton(this)">
+                                            Remove
+                                        </button>
+                                    {% endif %}
 
-                            <form method="POST" action="/service-asset/{{ asset.id }}" style="display:inline-block;">
-                                <input type="number" name="interval_days" placeholder="Days until next service" value="30" min="1" style="width:70px;">
-                                <button type="submit" class="secondary-btn">Service</button>
-                            </form>
-
-                        </td>
-                        
-                    </tr>
-                    
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No assets added yet.</p>
-        {% endif %}
+                                    <form method="POST" action="/service-asset/{{ asset.id }}" class="service-inline-form">
+                                        <input type="number" name="interval_days" placeholder="Days" value="30" min="1">
+                                        <button type="submit" class="secondary-btn">Service</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="assets-empty-state">
+                    <h3>No assets found</h3>
+                    <p>No assets have been added yet, or your search returned no results.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
@@ -169,7 +200,6 @@
                     <option value="Furniture">Furniture / Fixtures</option>
                     <option value="Other">Other / Miscellaneous</option>
                 </select>
-
             </div>
 
             <div class="form-group">
@@ -207,7 +237,6 @@
                 <input type="date" name="purchase_date" id="purchase_date">
             </div>
 
-            <!-- Status Dropdown -->
             <div class="form-group">
                 <label for="status">Status</label>
                 <select name="status" id="status">
@@ -229,18 +258,8 @@
                 <input type="date" name="next_service_date" id="next_service_date">
             </div>
 
-
-            <!-- <div class="form-group">
-                <label for="next_service_due">Next Service Due</label>
-                <input type="date" name="next_service_due" id="next_service_due">
-            </div> -->
-
             <button type="submit">Add Asset</button>
         </form>
-
-
-
-
     </div>
 </div>
 
@@ -261,7 +280,7 @@
 
 <!-- View Asset Modal -->
 <div id="viewAssetModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content modal-content-wide">
         <span class="close" onclick="closeViewModal()">&times;</span>
 
         <h2>Asset Details</h2>
@@ -277,25 +296,30 @@
             <p><strong>Model:</strong> <span id="view-model"></span></p>
             <p><strong>Purchase Date:</strong> <span id="view-purchase"></span></p>
             <p><strong>Status:</strong> <span id="view-status"></span></p>
-            <p><strong>Status:</strong> <span id="view-last_service_date"></span></p>
-            <p><strong>Status:</strong> <span id="view-next_service_date"></span></p>
+            <p><strong>Last Service Date:</strong> <span id="view-last_service_date"></span></p>
+            <p><strong>Next Service Date:</strong> <span id="view-next_service_date"></span></p>
         </div>
 
         <h3>Change History</h3>
-        <table id="historyTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Changed By</th>
-                    <th>Action</th>
-                    <th>Field</th>
-                    <th>Old Value</th>
-                    <th>New Value</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
+        <div class="history-table-wrap">
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Changed By</th>
+                        <th>Action</th>
+                        <th>Field</th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6">Loading history...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -307,7 +331,7 @@
         <h2>Edit Asset</h2>
 
         <form id="editAssetForm" method="POST">
-            <input type="text" name="asset_id" id="edit-id">
+            <input type="hidden" name="asset_id" id="edit-id">
 
             <div class="form-group">
                 <label>Type</label>
@@ -346,7 +370,7 @@
 
             <div class="form-group">
                 <label>Purchase Date</label>
-                <input type="text" name="purchase_date" id="edit-purchase">
+                <input type="date" name="purchase_date" id="edit-purchase">
             </div>
 
             <div class="form-group">
@@ -370,54 +394,44 @@
                 <input type="date" name="next_service_date" id="edit-next_service_date">
             </div>
 
-
             <button type="submit">Save Changes</button>
         </form>
     </div>
 </div>
 
-
-
-<!-- Modal JS -->
 <script>
-    // Add Asset Modal
+    const addAssetModal = document.getElementById("addAssetModal");
+    const deleteAssetModal = document.getElementById("deleteAssetModal");
+    const viewAssetModal = document.getElementById("viewAssetModal");
+    const editAssetModal = document.getElementById("editAssetModal");
+
     function openAddModal() {
-        document.getElementById("addAssetModal").style.display = "block";
+        addAssetModal.style.display = "block";
     }
 
     function closeAddModal() {
-        document.getElementById("addAssetModal").style.display = "none";
+        addAssetModal.style.display = "none";
     }
 
-
-
-
-    // Delete Asset Modal
     function openDeleteModalFromButton(btn) {
         const assetId = btn.dataset.id;
         const assetName = btn.dataset.name;
 
-        document.getElementById("deleteAssetModal").style.display = "block";
         document.getElementById("deleteAssetText").innerText =
             `Are you sure you want to remove ${assetName}?`;
 
-        document.getElementById("deleteAssetForm").action =
-            `/delete-asset/${assetId}`;
+        document.getElementById("deleteAssetForm").action = `/delete-asset/${assetId}`;
+        deleteAssetModal.style.display = "block";
     }
 
     function closeDeleteAssetModal() {
-        document.getElementById("deleteAssetModal").style.display = "none";
+        deleteAssetModal.style.display = "none";
     }
 
-
-
-
-
-    // View Asset Modal
     function openViewModal(row) {
-        document.getElementById("viewAssetModal").style.display = "block";
+        viewAssetModal.style.display = "block";
 
-        const assetId = row.dataset.id;  // ⚡ Important: get asset ID
+        const assetId = row.dataset.id;
 
         document.getElementById("view-code").innerText = row.dataset.code || "-";
         document.getElementById("view-type").innerText = row.dataset.type || "-";
@@ -431,85 +445,71 @@
         document.getElementById("view-status").innerText = row.dataset.status || "-";
         document.getElementById("view-last_service_date").innerText = row.dataset.last_service_date || "-";
         document.getElementById("view-next_service_date").innerText = row.dataset.next_service_date || "-";
-        
 
-        // Clear previous history
         const tbody = document.querySelector("#historyTable tbody");
-        tbody.innerHTML = "";
+        tbody.innerHTML = `<tr><td colspan="6">Loading history...</td></tr>`;
 
-        // Fetch history
         fetch(`/asset-history/${assetId}`)
             .then(res => res.json())
             .then(data => {
+                if (!data.history || data.history.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6">No history available.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = "";
                 data.history.forEach(entry => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td>${entry.change_date}</td>
-                        <td>${entry.changed_by}</td>
-                        <td>${entry.action}</td>
+                        <td>${entry.change_date || "-"}</td>
+                        <td>${entry.changed_by || "-"}</td>
+                        <td>${entry.action || "-"}</td>
                         <td>${entry.field_changed || "-"}</td>
                         <td>${entry.old_value || "-"}</td>
                         <td>${entry.new_value || "-"}</td>
                     `;
                     tbody.appendChild(tr);
                 });
+            })
+            .catch(() => {
+                tbody.innerHTML = `<tr><td colspan="6">Failed to load history.</td></tr>`;
             });
     }
 
-
-
-
     function closeViewModal() {
-        document.getElementById("viewAssetModal").style.display = "none";
+        viewAssetModal.style.display = "none";
     }
 
-
-
-
     function openEditModal(row) {
-    document.getElementById("editAssetModal").style.display = "block";
+        const assetId = row.dataset.id;
 
-    const assetId = row.querySelector(".danger-btn").dataset.id;
+        document.getElementById("edit-id").value = assetId;
+        document.getElementById("edit-type").value = row.dataset.type || "";
+        document.getElementById("edit-name").value = row.dataset.name || "";
+        document.getElementById("edit-serial").value = row.dataset.serial || "";
+        document.getElementById("edit-identifier").value = row.dataset.identifier || "";
+        document.getElementById("edit-location").value = row.dataset.location || "";
+        document.getElementById("edit-manufacturer").value = row.dataset.manufacturer || "";
+        document.getElementById("edit-model").value = row.dataset.model || "";
+        document.getElementById("edit-purchase").value = row.dataset.purchase || "";
+        document.getElementById("edit-status").value = row.dataset.status || "Active";
+        document.getElementById("edit-last_service_date").value = row.dataset.last_service_date || "";
+        document.getElementById("edit-next_service_date").value = row.dataset.next_service_date || "";
 
-    document.getElementById("edit-id").value = assetId;
-    document.getElementById("edit-type").value = row.dataset.type || "";
-    document.getElementById("edit-name").value = row.dataset.name || "";
-    document.getElementById("edit-serial").value = row.dataset.serial || "";
-    document.getElementById("edit-identifier").value = row.dataset.identifier || "";
-    document.getElementById("edit-location").value = row.dataset.location || "";
-    document.getElementById("edit-manufacturer").value = row.dataset.manufacturer || "";
-    document.getElementById("edit-model").value = row.dataset.model || "";
-    document.getElementById("edit-purchase").value = row.dataset.purchase || "";
-    document.getElementById("edit-status").value = row.dataset.status || "Active";
-    document.getElementById("edit-last_service_date").value = row.dataset.last_service_date || "";
-    document.getElementById("edit-next_service_date").value = row.dataset.next_service_date || "";
-
-    document.getElementById("editAssetForm").action = `/edit-asset/${assetId}`;
+        document.getElementById("editAssetForm").action = `/edit-asset/${assetId}`;
+        editAssetModal.style.display = "block";
     }
 
     function closeEditModal() {
-        document.getElementById("editAssetModal").style.display = "none";
+        editAssetModal.style.display = "none";
     }
 
-
-
-
-
-    window.onclick = function(event) {
-        const addModal = document.getElementById("addAssetModal");
-        const deleteModal = document.getElementById("deleteAssetModal");
-        const viewModal = document.getElementById("viewAssetModal");
-        const editModal = document.getElementById("editAssetModal");
-        
-        if (event.target === addModal) addModal.style.display = "none";
-        if (event.target === deleteModal) closeDeleteAssetModal();
-        if (event.target === viewModal) closeViewModal();
-        if (event.target === editModal) closeEditModal();
-    }
-
-
-
-    
+    window.addEventListener("click", function(event) {
+        if (event.target === addAssetModal) closeAddModal();
+        if (event.target === deleteAssetModal) closeDeleteAssetModal();
+        if (event.target === viewAssetModal) closeViewModal();
+        if (event.target === editAssetModal) closeEditModal();
+    });
 </script>
 
 </body>

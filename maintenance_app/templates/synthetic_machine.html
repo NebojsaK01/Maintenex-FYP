@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Synthetic Machine</title>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="{{ url_for('static', filename='images/maintenex logo.png') }}" alt="Logo" class="dashboard-logo">
+        <h2>Synthetic Machine</h2>
+    </div>
+
+    <div class="navbar-right">
+        <div class="dropdown">
+            <div class="hamburger">&#9776;</div>
+            <div class="dropdown-content">
+                <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
+                <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
+                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+                <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('employee_management') }}">
+                    <button class="dropdown-btn">Employee Management</button>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('synthetic_machine') }}"><button class="dropdown-btn">Synthetic Machine</button></a>
+                <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
+                <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="synthetic-machine-container">
+    <h1>Synthetic Machine Simulator</h1>
+    <p>Adjust the machine sensors and estimate current machine operating risk.</p>
+
+    <div class="synthetic-grid">
+        <div class="machine-panel">
+            <h3>Machine View</h3>
+
+            <div class="machine-box">
+                <div class="machine-main">
+                    <div class="machine-screen"></div>
+                    <div class="machine-leg left-leg"></div>
+                    <div class="machine-leg right-leg"></div>
+                </div>
+                <div class="machine-rotor rotor-normal" id="machineRotor"></div>
+            </div>
+
+            <div class="live-values">
+                <p><strong>Temperature:</strong> <span id="tempLive">65</span> °C</p>
+                <p><strong>Vibration:</strong> <span id="vibLive">0.10</span> g</p>
+                <p><strong>RPM:</strong> <span id="rpmLive">1450</span></p>
+                <p><strong>Load:</strong> <span id="loadLive">70</span> %</p>
+                <p><strong>Days Since Last Service:</strong> <span id="daysLive">30</span></p>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <h3>Sensor Controls</h3>
+
+            <label>Temperature: <span id="tempVal">65</span> °C</label>
+            <input type="range" id="temperature" min="40" max="95" step="0.1" value="65">
+
+            <label>Vibration: <span id="vibVal">0.10</span> g</label>
+            <input type="range" id="vibration" min="0.02" max="0.50" step="0.001" value="0.10">
+
+            <label>RPM: <span id="rpmVal">1450</span></label>
+            <input type="range" id="rpm" min="1380" max="1550" step="1" value="1450">
+
+            <label>Load: <span id="loadVal">70</span> %</label>
+            <input type="range" id="load" min="35" max="98" step="0.1" value="70">
+
+            <label>Days Since Last Service: <span id="daysVal">30</span></label>
+            <input type="range" id="days_since_service" min="0" max="180" step="1" value="30">
+
+            <button type="button" onclick="runPrediction()">Predict Machine Risk</button>
+        </div>
+    </div>
+
+    <div class="prediction-panel">
+        <h3>Prediction Output</h3>
+        <p><strong>Status:</strong> <span id="statusText">-</span></p>
+        <p><strong>Risk Score:</strong> <span id="probabilityText">-</span></p>
+
+        <div class="risk-bar-container">
+            <div class="risk-bar-fill risk-healthy" id="riskBarFill"></div>
+        </div>
+
+        <h4>Why</h4>
+        <ul id="reasonsList">
+            <li>No prediction yet.</li>
+        </ul>
+
+        <h4>Component Breakdown</h4>
+        <ul id="componentsList">
+            <li>Temperature: -</li>
+            <li>Vibration: -</li>
+            <li>RPM: -</li>
+            <li>Load: -</li>
+            <li>Days Since Service: -</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const temperature = document.getElementById("temperature");
+    const vibration = document.getElementById("vibration");
+    const rpm = document.getElementById("rpm");
+    const load = document.getElementById("load");
+    const daysSinceService = document.getElementById("days_since_service");
+    const rotor = document.getElementById("machineRotor");
+
+    function updateUI() {
+        document.getElementById("tempVal").innerText = temperature.value;
+        document.getElementById("vibVal").innerText = vibration.value;
+        document.getElementById("rpmVal").innerText = rpm.value;
+        document.getElementById("loadVal").innerText = load.value;
+        document.getElementById("daysVal").innerText = daysSinceService.value;
+
+        document.getElementById("tempLive").innerText = temperature.value;
+        document.getElementById("vibLive").innerText = vibration.value;
+        document.getElementById("rpmLive").innerText = rpm.value;
+        document.getElementById("loadLive").innerText = load.value;
+        document.getElementById("daysLive").innerText = daysSinceService.value;
+
+        const rpmNum = parseFloat(rpm.value);
+        const tempNum = parseFloat(temperature.value);
+        const vibNum = parseFloat(vibration.value);
+        const loadNum = parseFloat(load.value);
+
+        const duration = Math.max(0.18, 3 - ((rpmNum - 1380) / 80));
+        rotor.style.animationDuration = duration + "s";
+
+        rotor.classList.remove("rotor-normal", "rotor-warning", "rotor-danger");
+
+        if (tempNum > 82 || vibNum > 0.25 || loadNum > 95 || rpmNum > 1500 || rpmNum < 1380) {
+            rotor.classList.add("rotor-danger");
+        } else if (tempNum > 75 || vibNum > 0.18 || loadNum > 85 || rpmNum > 1480 || rpmNum < 1420) {
+            rotor.classList.add("rotor-warning");
+        } else {
+            rotor.classList.add("rotor-normal");
+        }
+    }
+
+    async function runPrediction() {
+        const response = await fetch("/api/synthetic-machine-predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                temperature: temperature.value,
+                vibration: vibration.value,
+                rpm: rpm.value,
+                load: load.value,
+                days_since_service: daysSinceService.value
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        document.getElementById("statusText").innerText = data.status;
+        document.getElementById("probabilityText").innerText = data.risk_probability + "%";
+
+        const riskBarFill = document.getElementById("riskBarFill");
+        riskBarFill.style.width = data.risk_probability + "%";
+
+        riskBarFill.classList.remove("risk-healthy", "risk-warning", "risk-danger");
+        if (data.risk_probability >= 70) {
+            riskBarFill.classList.add("risk-danger");
+        } else if (data.risk_probability >= 35) {
+            riskBarFill.classList.add("risk-warning");
+        } else {
+            riskBarFill.classList.add("risk-healthy");
+        }
+
+        const reasonsList = document.getElementById("reasonsList");
+        reasonsList.innerHTML = "";
+        data.reasons.forEach(reason => {
+            const li = document.createElement("li");
+            li.innerText = reason;
+            reasonsList.appendChild(li);
+        });
+
+        const componentsList = document.getElementById("componentsList");
+        componentsList.innerHTML = `
+            <li>Temperature: ${data.component_scores.temperature}%</li>
+            <li>Vibration: ${data.component_scores.vibration}%</li>
+            <li>RPM: ${data.component_scores.rpm}%</li>
+            <li>Load: ${data.component_scores.load}%</li>
+            <li>Days Since Service: ${data.component_scores.days_since_service}%</li>
+        `;
+    }
+
+    [temperature, vibration, rpm, load, daysSinceService].forEach(slider => {
+        slider.addEventListener("input", updateUI);
+    });
+
+    updateUI();
+</script>
+
+</body>
+</html>
+
+
+

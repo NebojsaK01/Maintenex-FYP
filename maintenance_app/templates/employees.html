@@ -21,7 +21,13 @@
                 <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
                 <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
                 <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('employee_management') }}">
+                    <button class="dropdown-btn">Employee Management</button>
+                </a>
+                {% endif %}
                 <a href="{{ url_for('assets') }}"><button class="dropdown-btn">Assets</button></a>
+                <a href="{{ url_for('synthetic_machine') }}"><button class="dropdown-btn">Synthetic Machine</button></a>
                 <a href="{{ url_for('profile') }}"><button class="dropdown-btn">Profile</button></a>
                 <a href="{{ url_for('logout') }}"><button class="dropdown-btn logout-btn">Logout</button></a>
             </div>

@@ -22,7 +22,7 @@ Load:	            35-85%	            85-95%	                >95%
 NUM_MACHINES = 10  # 10 machines
 DAYS_PER_CYCLE = 180  # ~6 months between major services
 NUM_CYCLES = 10  # 10 cycles per machine of services (~6 mths).
-OUTPUT_FILE = "bausch_and_lomb_style_sensor_data.csv"
+OUTPUT_FILE = "synthetic_sensor_data.csv"
 
 
 class MachineBehavior:
