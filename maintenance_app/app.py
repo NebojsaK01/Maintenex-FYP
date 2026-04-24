@@ -170,13 +170,13 @@ def synthetic_machine_predict():
 
 
 
-# Connect to MySQL -> (XAMPP)
+# for hosting
 def get_db():
     return mysql.connector.connect(
-        host="localhost", # simple 4 now.
-        user="root",
-        password="",
-        database="maintenance_app",
+        host="Nebojsa.mysql.pythonanywhere-services.com",
+        user="Nebojsa",
+        password="Password123",
+        database="Nebojsa$maintenance_app"
     )
 
 
