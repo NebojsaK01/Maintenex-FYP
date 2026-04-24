@@ -107,19 +107,3 @@ print("Model saved as synthetic_risk_model.pkl")
 
 
 
-"""
-
-I initially trained a Random Forest classifier to predict machine risk, 
-but since the target was derived from rule-based thresholds, the model 
-learned those rules directly and produced binary outputs. 
-I then replaced it with a continuous risk scoring function to improve smoothness and usability.
-
-
-
-The ML model achieved high accuracy but lacked practical usability due to step-like predictions. 
-A deterministic scoring system provided better control and interpretability.
-
-
-The ML model was used to validate relationships between sensor inputs and machine risk,
-but a deterministic scoring model was used in the final system for better interpretability and user experience.
-"""

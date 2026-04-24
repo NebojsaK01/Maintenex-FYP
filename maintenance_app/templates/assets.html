@@ -148,7 +148,8 @@
                                             onclick="openEditModal(this.closest('tr'))">
                                             Edit
                                         </button>
-
+                                    {% endif %}
+                                    {% if session['role'] in ['admin'] %}
                                         <button
                                             type="button"
                                             class="danger-btn"

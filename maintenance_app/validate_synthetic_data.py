@@ -132,28 +132,3 @@ print("- Vibration rising gradually as load increases")
 print("- RPM staying more stable than temperature/vibration")
 print("- Correlations and bin trends that are smooth, not step-like")
 
-
-"""
-
-1st chart:
-Temperature increases gradually with load, with natural variability, reflecting realistic thermal behavior.
-
-2st chart:
-Vibration shows a weaker but still positive relationship with load, which is realistic as vibration is influenced by multiple factors.
-
-3st chart:
-RPM remains relatively stable across load levels, reflecting controlled operating conditions typical in industrial machines.
-
-
-The synthetic dataset demonstrates realistic gradual relationships between load, temperature, and vibration, 
-with natural variability rather than hard thresholds, supporting its validity as a simulation of real-world machine behavior.
-
-
-The synthetic dataset was validated by analyzing statistical relationships between key sensor variables. A moderate positive correlation (r ≈ 0.42) was observed between load and temperature, 
-reflecting realistic thermal behavior in mechanical systems. Vibration showed a weaker positive relationship with load (r ≈ 0.18), 
-consistent with real-world variability. RPM remained largely independent of load (r ≈ 0.01), indicating controlled operating conditions.
-
-Binned trend analysis further demonstrated gradual increases in temperature and vibration with increasing load, 
-without abrupt transitions. The presence of noise and non-linear relationships confirms that the data is not threshold-based, 
-but instead mimics realistic continuous system behavior
-"""

@@ -18,7 +18,7 @@
             <div class="dropdown-content">
                 <a href="{{ url_for('dashboard') }}"><button class="dropdown-btn">Dashboard</button></a>
                 <a href="{{ url_for('alerts') }}"><button class="dropdown-btn">Alerts</button></a>
-                <a href="{{ url_for('technicians') }}"><button class="dropdown-btn">Technicians</button></a>
+      
                 <a href="{{ url_for('employees') }}"><button class="dropdown-btn">Employees</button></a>
                 {% if session.get('role') == 'admin' %}
                 <a href="{{ url_for('employee_management') }}">
